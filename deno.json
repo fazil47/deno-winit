@@ -1,0 +1,5 @@
+{
+    "tasks": {
+        "winit": "deno run --allow-ffi --unstable-ffi mod.ts"
+    }
+}
