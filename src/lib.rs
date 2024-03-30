@@ -2,6 +2,7 @@
 
 use std::path::Path;
 
+use raw_window_handle::HasRawWindowHandle;
 use simple_logger::SimpleLogger;
 use winit::{
     event::{Event, WindowEvent},
@@ -13,7 +14,7 @@ use winit::{
 mod fill;
 
 #[no_mangle]
-pub extern "C" fn spawn_window() {
+pub extern "C" fn spawn_window(setup_func: extern "C" fn(), draw_func: extern "C" fn()) {
     SimpleLogger::new().init().unwrap();
 
     // You'll have to choose an icon size at your own discretion. On X11, the desired size varies
@@ -34,22 +35,29 @@ pub extern "C" fn spawn_window() {
         .build(&event_loop)
         .unwrap();
 
-    let res = event_loop.run(move |event, elwt| {
+    match window.raw_window_handle() {
+        raw_window_handle::RawWindowHandle::Win32(handle) => {
+            println!("Win32: {:?}", handle);
+            setup_func();
+        }
+        _ => (),
+    }
+
+    _ = event_loop.run(move |event, elwt| {
         if let Event::WindowEvent { event, .. } = event {
             match event {
                 WindowEvent::CloseRequested => elwt.exit(),
                 WindowEvent::DroppedFile(path) => {
                     window.set_window_icon(Some(load_icon(&path)));
                 }
-                WindowEvent::RedrawRequested => fill::fill_window(&window),
+                WindowEvent::RedrawRequested => {
+                    draw_func();
+                    fill::fill_window(&window);
+                }
                 _ => (),
             }
         }
     });
-
-    if res.is_err() {
-        println!("Event loop error.");
-    }
 }
 
 fn load_icon(path: &Path) -> Icon {
