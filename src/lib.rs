@@ -1,6 +1,6 @@
 #![allow(clippy::single_match)]
 
-use std::path::Path;
+use std::{ffi, path::Path};
 
 use raw_window_handle::HasRawWindowHandle;
 use simple_logger::SimpleLogger;
@@ -14,7 +14,10 @@ use winit::{
 mod fill;
 
 #[no_mangle]
-pub extern "C" fn spawn_window(setup_func: extern "C" fn(), draw_func: extern "C" fn()) {
+pub extern "C" fn spawn_window(
+    setup_func: extern "C" fn(hwnd: *mut ffi::c_void, hinstance: *mut ffi::c_void),
+    draw_func: extern "C" fn(),
+) {
     SimpleLogger::new().init().unwrap();
 
     // You'll have to choose an icon size at your own discretion. On X11, the desired size varies
@@ -38,7 +41,7 @@ pub extern "C" fn spawn_window(setup_func: extern "C" fn(), draw_func: extern "C
     match window.raw_window_handle() {
         raw_window_handle::RawWindowHandle::Win32(handle) => {
             println!("Win32: {:?}", handle);
-            setup_func();
+            setup_func(handle.hwnd, handle.hinstance);
         }
         _ => (),
     }

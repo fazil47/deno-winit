@@ -25,25 +25,28 @@ const libName = `./target/release/deno_winit.${libSuffix}`;
 const dylib = Deno.dlopen(libName, {
   spawn_window: { parameters: ["function", "function"], result: "void" },
 } as const);
+
+const adapter = await navigator.gpu.requestAdapter();
+const device = await adapter?.requestDevice();
+
+let surface: Deno.UnsafeWindowSurface | null = null;
 const setupFunctionCallback = new Deno.UnsafeCallback(
-  { parameters: [], result: "void" },
-  () => {
-    console.log("setup function called");
+  { parameters: ["pointer", "pointer"], result: "void" },
+  (winHandle, displayHandle) => {
+    surface = new Deno.UnsafeWindowSurface(system, winHandle, displayHandle);
   }
 );
+
 const drawFunctionCallback = new Deno.UnsafeCallback(
   { parameters: [], result: "void" },
   () => {
-    console.log("draw function called");
+    if (surface) {
+      console.log(surface);
+    }
   }
 );
+
 dylib.symbols.spawn_window(
   setupFunctionCallback.pointer,
   drawFunctionCallback.pointer
 );
-
-// const surface = new Deno.UnsafeWindowSurface(
-//   system,
-//   windowHandle,
-//   displayHandle
-// );
