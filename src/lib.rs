@@ -5,17 +5,20 @@ use std::{ffi, path::Path};
 use raw_window_handle::HasRawWindowHandle;
 use simple_logger::SimpleLogger;
 use winit::{
+    dpi::{LogicalSize, Size},
     event::{Event, WindowEvent},
     event_loop::EventLoop,
     window::{Icon, WindowBuilder},
 };
 
-#[path = "util/fill.rs"]
-mod fill;
-
 #[no_mangle]
 pub extern "C" fn spawn_window(
-    setup_func: extern "C" fn(hwnd: *mut ffi::c_void, hinstance: *mut ffi::c_void),
+    setup_func: extern "C" fn(
+        hwnd: *mut ffi::c_void,
+        hinstance: *mut ffi::c_void,
+        width: u32,
+        height: u32,
+    ),
     draw_func: extern "C" fn(),
 ) {
     SimpleLogger::new().init().unwrap();
@@ -32,6 +35,7 @@ pub extern "C" fn spawn_window(
 
     let window = WindowBuilder::new()
         .with_title("An iconic window!")
+        .with_inner_size(Size::Logical(LogicalSize::new(512.0, 512.0)))
         // At present, this only does anything on Windows and X11, so if you want to save load
         // time, you can put icon loading behind a function that returns `None` on other platforms.
         .with_window_icon(Some(icon))
@@ -40,8 +44,12 @@ pub extern "C" fn spawn_window(
 
     match window.raw_window_handle() {
         raw_window_handle::RawWindowHandle::Win32(handle) => {
-            println!("Win32: {:?}", handle);
-            setup_func(handle.hwnd, handle.hinstance);
+            setup_func(
+                handle.hwnd,
+                handle.hinstance,
+                window.inner_size().width,
+                window.inner_size().height,
+            );
         }
         _ => (),
     }
@@ -55,7 +63,6 @@ pub extern "C" fn spawn_window(
                 }
                 WindowEvent::RedrawRequested => {
                     draw_func();
-                    fill::fill_window(&window);
                 }
                 _ => (),
             }
