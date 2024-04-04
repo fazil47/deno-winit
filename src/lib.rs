@@ -1,11 +1,11 @@
 #![allow(clippy::single_match)]
 
-use std::{ffi, path::Path};
+use std::{ffi, path::Path, ptr::null};
 
-use raw_window_handle::HasRawWindowHandle;
+use raw_window_handle::{HasRawDisplayHandle, HasRawWindowHandle};
 use simple_logger::SimpleLogger;
 use winit::{
-    dpi::{LogicalSize, Size},
+    dpi::{PhysicalSize, Size},
     event::{Event, WindowEvent},
     event_loop::EventLoop,
     window::{Icon, WindowBuilder},
@@ -13,6 +13,8 @@ use winit::{
 
 #[no_mangle]
 pub extern "C" fn spawn_window(
+    width: u32,
+    height: u32,
     setup_func: extern "C" fn(
         hwnd: *mut ffi::c_void,
         hinstance: *mut ffi::c_void,
@@ -20,6 +22,7 @@ pub extern "C" fn spawn_window(
         height: u32,
     ),
     draw_func: extern "C" fn(),
+    resize_func: extern "C" fn(width: u32, height: u32),
 ) {
     SimpleLogger::new().init().unwrap();
 
@@ -35,7 +38,7 @@ pub extern "C" fn spawn_window(
 
     let window = WindowBuilder::new()
         .with_title("An iconic window!")
-        .with_inner_size(Size::Logical(LogicalSize::new(512.0, 512.0)))
+        .with_inner_size(Size::Physical(PhysicalSize::new(width, height)))
         // At present, this only does anything on Windows and X11, so if you want to save load
         // time, you can put icon loading behind a function that returns `None` on other platforms.
         .with_window_icon(Some(icon))
@@ -43,15 +46,33 @@ pub extern "C" fn spawn_window(
         .unwrap();
 
     match window.raw_window_handle() {
-        raw_window_handle::RawWindowHandle::Win32(handle) => {
-            setup_func(
-                handle.hwnd,
-                handle.hinstance,
-                window.inner_size().width,
-                window.inner_size().height,
-            );
-        }
+        raw_window_handle::RawWindowHandle::Win32(handle) => setup_func(
+            handle.hwnd,
+            handle.hinstance,
+            window.inner_size().width,
+            window.inner_size().height,
+        ),
+        raw_window_handle::RawWindowHandle::AppKit(handle) => setup_func(
+            handle.ns_view,
+            null::<ffi::c_void>() as *mut ffi::c_void,
+            window.inner_size().width,
+            window.inner_size().height,
+        ),
         _ => (),
+    }
+
+    if let raw_window_handle::RawWindowHandle::Xlib(window_handle) = window.raw_window_handle() {
+        match window.raw_display_handle() {
+            raw_window_handle::RawDisplayHandle::Xlib(display_handle) => {
+                setup_func(
+                    window_handle.window as *mut ffi::c_void,
+                    display_handle.display,
+                    window.inner_size().width,
+                    window.inner_size().height,
+                );
+            }
+            _ => (),
+        }
     }
 
     _ = event_loop.run(move |event, elwt| {
@@ -63,6 +84,9 @@ pub extern "C" fn spawn_window(
                 }
                 WindowEvent::RedrawRequested => {
                     draw_func();
+                }
+                WindowEvent::Resized(size) => {
+                    resize_func(size.width, size.height);
                 }
                 _ => (),
             }
