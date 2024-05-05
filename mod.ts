@@ -10,7 +10,7 @@ export async function spawnWindow(
 ) {
   // Determine library extension based on your OS.
   let libSuffix = "";
-  let system: "win32" | "cocoa" | "x11" = "win32";
+  let system: "win32" | "cocoa" | "wayland" | "x11" = "win32";
   switch (Deno.build.os) {
     case "windows":
       libSuffix = "dll";
@@ -22,7 +22,7 @@ export async function spawnWindow(
       break;
     default:
       libSuffix = "so";
-      system = "x11";
+      system = "wayland";
       break;
   }
   console.log(`Loading ${libSuffix} library for ${system}.`);
