@@ -61,7 +61,19 @@ pub extern "C" fn spawn_window(
         _ => (),
     }
 
-    if let raw_window_handle::RawWindowHandle::Xlib(window_handle) = window.raw_window_handle() {
+    if let raw_window_handle::RawWindowHandle::Wayland(window_handle) = window.raw_window_handle() {
+        match window.raw_display_handle() {
+            raw_window_handle::RawDisplayHandle::Wayland(display_handle) => setup_func(
+                window_handle.surface,
+                display_handle.display,
+                window.inner_size().width,
+                window.inner_size().height,
+            ),
+            _ => (),
+        }
+    } else if let raw_window_handle::RawWindowHandle::Xlib(window_handle) =
+        window.raw_window_handle()
+    {
         match window.raw_display_handle() {
             raw_window_handle::RawDisplayHandle::Xlib(display_handle) => {
                 setup_func(
