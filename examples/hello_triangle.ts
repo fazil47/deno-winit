@@ -1,4 +1,4 @@
-import { spawnWindow } from "../mod.ts";
+import { Window } from "../mod.ts";
 
 const shaderCode = `
 @vertex
@@ -74,4 +74,8 @@ const resize = (width: number, height: number) => {
   console.log(`Resized to ${width}x${height}.`);
 };
 
-spawnWindow(512, 512, presentationFormat, setup, draw, resize);
+const window = new Window()
+  .withSetupFunction(setup)
+  .withDrawFunction(draw)
+  .withResizeFunction(resize);
+window.spawn();
