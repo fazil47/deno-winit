@@ -3,7 +3,6 @@
 use std::{ffi, path::Path, ptr::null};
 
 use raw_window_handle::{HasRawDisplayHandle, HasRawWindowHandle};
-use simple_logger::SimpleLogger;
 use winit::{
     dpi::{PhysicalSize, Size},
     event::{Event, WindowEvent},
@@ -24,8 +23,6 @@ pub extern "C" fn spawn_window(
     draw_func: extern "C" fn(),
     resize_func: extern "C" fn(width: u32, height: u32),
 ) {
-    SimpleLogger::new().init().unwrap();
-
     // You'll have to choose an icon size at your own discretion. On X11, the desired size varies
     // by WM, and on Windows, you still have to account for screen scaling. Here we use 32px,
     // since it seems to work well enough in most cases. Be careful about going too high, or

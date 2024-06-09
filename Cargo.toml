@@ -9,8 +9,5 @@ crate-type = ["cdylib"]
 
 [dependencies]
 winit = { version = "0.29.15", features = ["rwh_05"] }
-cursor-icon = "1.1.0"
 image = "0.25.0"
-simple_logger = "4.3.3"
-softbuffer = "0.3.0"
 raw-window-handle = { version = "0.5.2", features = ["std"] }
