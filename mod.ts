@@ -1,19 +1,23 @@
-// mod.ts
+import { dlopen, FetchOptions } from "@denosaurs/plug";
+
+export const VERSION = "0.1.0";
 
 export class Window {
-  private dylib: Deno.DynamicLibrary<{
-    readonly spawn_window: {
-      readonly parameters: readonly [
-        "u32",
-        "u32",
-        "function",
-        "function",
-        "function"
-      ];
-      readonly result: "void";
-    };
-  }>;
-  private system: "win32" | "cocoa" | "wayland" | "x11";
+  private dylibPromise: Promise<
+    Deno.DynamicLibrary<{
+      readonly spawn_window: {
+        readonly parameters: readonly [
+          "u32",
+          "u32",
+          "function",
+          "function",
+          "function"
+        ];
+        readonly result: "void";
+      };
+    }>
+  >;
+  private system: "win32" | "cocoa" | "wayland" | "x11" | null = null;
   private width: number = 512;
   private height: number = 512;
   private presentationFormat: GPUTextureFormat = "bgra8unorm";
@@ -25,32 +29,31 @@ export class Window {
     () => {};
   private resizeFunction: (width: number, height: number) => void = () => {};
 
-  constructor() {
-    // Determine library extension based on your OS.
-    let libSuffix = "";
+  constructor(forceX11: boolean = false) {
     switch (Deno.build.os) {
       case "linux":
-        libSuffix = "so";
-        this.system = "wayland";
+        if (forceX11) {
+          this.system = "x11";
+        } else {
+          this.system = "wayland";
+        }
         break;
       case "windows":
-        libSuffix = "dll";
         this.system = "win32";
         break;
       case "darwin":
-        libSuffix = "dylib";
         this.system = "cocoa";
         break;
       default:
-        libSuffix = "so";
-        this.system = "x11";
         break;
     }
-    console.log(`Loading ${libSuffix} library for ${this.system}.`);
 
-    // Open library and define exported symbols
-    const libName = `./target/release/deno_winit.${libSuffix}`;
-    this.dylib = Deno.dlopen(libName, {
+    const options: FetchOptions = {
+      name: "deno_winit",
+      url: `https://github.com/fazil47/deno_winit/releases/download/v${VERSION}/`,
+    };
+
+    this.dylibPromise = dlopen(options, {
       spawn_window: {
         parameters: ["u32", "u32", "function", "function", "function"],
         result: "void",
@@ -91,6 +94,14 @@ export class Window {
   }
 
   public async spawn() {
+    if (!this.dylibPromise) {
+      throw new Error("Dynamic library not loaded.");
+    }
+
+    if (!this.system) {
+      throw new Error("System not supported.");
+    }
+
     const adapter = await navigator.gpu.requestAdapter();
     if (!adapter) {
       throw new Error("No GPU adapter found.");
@@ -106,6 +117,10 @@ export class Window {
     const setupFunctionCallback = new Deno.UnsafeCallback(
       { parameters: ["pointer", "pointer", "u32", "u32"], result: "void" },
       (winHandle, displayHandle, width, height) => {
+        if (!this.system) {
+          throw new Error("System not supported.");
+        }
+
         surface = new Deno.UnsafeWindowSurface(
           this.system,
           winHandle,
@@ -140,7 +155,8 @@ export class Window {
       (width, height) => this.resizeFunction(width, height)
     );
 
-    this.dylib.symbols.spawn_window(
+    const dylib = await this.dylibPromise;
+    dylib.symbols.spawn_window(
       this.width,
       this.height,
       setupFunctionCallback.pointer,

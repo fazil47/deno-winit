@@ -1,6 +1,7 @@
 {
+  "version": "0.1.0",
   "tasks": {
-    "hello_triangle": "deno run --allow-ffi --unstable-ffi --unstable-webgpu examples/hello_triangle.ts"
+    "hello_triangle": "deno run --allow-ffi --allow-env --allow-read --allow-net --allow-write --unstable-ffi --unstable-webgpu examples/hello_triangle.ts"
   },
   "imports": {
     "@denosaurs/plug": "jsr:@denosaurs/plug@^1.0.6"
