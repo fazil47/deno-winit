@@ -1,5 +1,8 @@
 {
   "tasks": {
-    "winit": "deno run --allow-ffi --unstable-ffi mod.ts"
+    "hello_triangle": "deno run --allow-ffi --unstable-ffi --unstable-webgpu examples/hello_triangle.ts"
+  },
+  "imports": {
+    "@denosaurs/plug": "jsr:@denosaurs/plug@^1.0.6"
   }
 }
