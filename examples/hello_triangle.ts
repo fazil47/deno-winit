@@ -17,9 +17,7 @@ fn fs_main() -> @location(0) vec4<f32> {
 const presentationFormat = "bgra8unorm";
 let renderPipeline: GPURenderPipeline | null = null;
 
-const setup = (device: GPUDevice, context: GPUCanvasContext) => {
-  console.log(context);
-
+const setup = (device: GPUDevice, _context: GPUCanvasContext) => {
   const shaderModule = device.createShaderModule({
     code: shaderCode,
   });
