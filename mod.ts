@@ -132,7 +132,8 @@ export class WinitWindow {
       { parameters: ["pointer", "pointer", "u32", "u32"], result: "void" },
       (winHandle, displayHandle, width, height) => {
         if (!this.system) {
-          throw new Error("System not supported.");
+          console.error("System not supported.");
+          return;
         }
 
         surface = new Deno.UnsafeWindowSurface(
@@ -154,8 +155,13 @@ export class WinitWindow {
     const drawFunctionCallback = new Deno.UnsafeCallback(
       { parameters: [], result: "void" },
       () => {
-        if (!surface || !context) {
-          console.error("Surface or context not initialized.");
+        if (!surface) {
+          console.error("Surface not initialized.");
+          return;
+        }
+
+        if (!context) {
+          console.error("Context not initialized.");
           return;
         }
 
