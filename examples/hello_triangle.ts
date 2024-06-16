@@ -1,4 +1,4 @@
-import { Window } from "../mod.ts";
+import { WinitWindow } from "../mod.ts";
 
 const shaderCode = `
 @vertex
@@ -17,7 +17,7 @@ fn fs_main() -> @location(0) vec4<f32> {
 const presentationFormat = "bgra8unorm";
 let renderPipeline: GPURenderPipeline | null = null;
 
-const setup = (device: GPUDevice, _context: GPUCanvasContext) => {
+const setupFunction = (device: GPUDevice, _context: GPUCanvasContext) => {
   const shaderModule = device.createShaderModule({
     code: shaderCode,
   });
@@ -44,7 +44,7 @@ const setup = (device: GPUDevice, _context: GPUCanvasContext) => {
   });
 };
 
-const draw = (device: GPUDevice, context: GPUCanvasContext) => {
+const drawFunction = (device: GPUDevice, context: GPUCanvasContext) => {
   if (!renderPipeline) {
     console.error("Pipeline not initialized.");
     return;
@@ -68,12 +68,14 @@ const draw = (device: GPUDevice, context: GPUCanvasContext) => {
   device.queue.submit([encoder.finish()]);
 };
 
-const resize = (width: number, height: number) => {
+const resizeFunction = (width: number, height: number) => {
   console.log(`Resized to ${width}x${height}.`);
 };
 
-const window = new Window()
-  .withSetupFunction(setup)
-  .withDrawFunction(draw)
-  .withResizeFunction(resize);
+const window = new WinitWindow({
+  presentationFormat,
+  setupFunction,
+  drawFunction,
+  resizeFunction,
+});
 window.spawn();

@@ -2,21 +2,23 @@ import { dlopen, FetchOptions } from "@denosaurs/plug";
 
 export const VERSION = "0.1.0";
 
-export class Window {
-  private dylibPromise: Promise<
-    Deno.DynamicLibrary<{
-      readonly spawn_window: {
-        readonly parameters: readonly [
-          "u32",
-          "u32",
-          "function",
-          "function",
-          "function"
-        ];
-        readonly result: "void";
-      };
-    }>
-  >;
+type winitDylibSymbols = {
+  readonly spawn_window: {
+    readonly parameters: readonly [
+      "u32",
+      "u32",
+      "function",
+      "function",
+      "function"
+    ];
+    readonly result: "void";
+  };
+};
+
+type winitDylib = Deno.DynamicLibrary<winitDylibSymbols>;
+
+export class WinitWindow {
+  private dylibPromise: Promise<winitDylib>;
   private system: "win32" | "cocoa" | "wayland" | "x11" | null = null;
   private width: number = 512;
   private height: number = 512;
@@ -29,7 +31,47 @@ export class Window {
     () => {};
   private resizeFunction: (width: number, height: number) => void = () => {};
 
-  constructor(forceX11: boolean = false) {
+  constructor({
+    forceX11 = false,
+    width,
+    height,
+    presentationFormat,
+    setupFunction,
+    drawFunction,
+    resizeFunction,
+  }: {
+    forceX11?: boolean;
+    width?: number;
+    height?: number;
+    presentationFormat?: GPUTextureFormat;
+    setupFunction?: (device: GPUDevice, context: GPUCanvasContext) => void;
+    drawFunction?: (device: GPUDevice, context: GPUCanvasContext) => void;
+    resizeFunction?: (width: number, height: number) => void;
+  }) {
+    if (width) {
+      this.width = width;
+    }
+
+    if (height) {
+      this.height = height;
+    }
+
+    if (presentationFormat) {
+      this.presentationFormat = presentationFormat;
+    }
+
+    if (setupFunction) {
+      this.setupFunction = setupFunction;
+    }
+
+    if (drawFunction) {
+      this.drawFunction = drawFunction;
+    }
+
+    if (resizeFunction) {
+      this.resizeFunction = resizeFunction;
+    }
+
     switch (Deno.build.os) {
       case "linux":
         if (forceX11) {
@@ -45,7 +87,7 @@ export class Window {
         this.system = "cocoa";
         break;
       default:
-        break;
+        throw new Error("Unsupported OS.");
     }
 
     const options: FetchOptions = {
@@ -53,44 +95,16 @@ export class Window {
       url: `https://github.com/fazil47/deno_winit/releases/download/v${VERSION}/`,
     };
 
-    this.dylibPromise = dlopen(options, {
+    const symbols = {
       spawn_window: {
         parameters: ["u32", "u32", "function", "function", "function"],
         result: "void",
       },
-    } as const);
-  }
-
-  public withSize(width: number, height: number) {
-    this.width = width;
-    this.height = height;
-    return this;
-  }
-
-  public withFormat(format: GPUTextureFormat) {
-    this.presentationFormat = format;
-    return this;
-  }
-
-  public withSetupFunction(
-    setupFunction: (device: GPUDevice, context: GPUCanvasContext) => void
-  ) {
-    this.setupFunction = setupFunction;
-    return this;
-  }
-
-  public withDrawFunction(
-    drawFunction: (device: GPUDevice, context: GPUCanvasContext) => void
-  ) {
-    this.drawFunction = drawFunction;
-    return this;
-  }
-
-  public withResizeFunction(
-    resizeFunction: (width: number, height: number) => void
-  ) {
-    this.resizeFunction = resizeFunction;
-    return this;
+    } as const;
+    this.dylibPromise =
+      Deno.env.get("DENO_WINIT_LOCAL_LIB") === "1"
+        ? dlopen_Local(symbols)
+        : dlopen(options, symbols);
   }
 
   public async spawn() {
@@ -164,4 +178,26 @@ export class Window {
       resizeFunctionCallback.pointer
     );
   }
+}
+
+function dlopen_Local(symbols: winitDylibSymbols): Promise<winitDylib> {
+  let libFileName = "";
+  switch (Deno.build.os) {
+    case "linux":
+      libFileName = "libdeno_winit.so";
+      break;
+    case "windows":
+      libFileName = "deno_winit.dll";
+      break;
+    case "darwin":
+      libFileName = "libdeno_winit.dylib";
+      break;
+    default:
+      throw new Error("Unsupported OS.");
+  }
+
+  // Open library and define exported symbols
+  const libPath = `./target/release/${libFileName}`;
+
+  return Promise.resolve(Deno.dlopen(libPath, symbols));
 }
