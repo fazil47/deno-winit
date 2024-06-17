@@ -1,6 +1,6 @@
 #![allow(clippy::single_match)]
 
-use std::{ffi, path::Path, ptr::null};
+use std::{ffi, path::Path};
 
 use raw_window_handle::{HasRawDisplayHandle, HasRawWindowHandle};
 use winit::{
@@ -50,8 +50,8 @@ pub extern "C" fn spawn_window(
             window.inner_size().height,
         ),
         raw_window_handle::RawWindowHandle::AppKit(handle) => setup_func(
+            handle.ns_window,
             handle.ns_view,
-            null::<ffi::c_void>() as *mut ffi::c_void,
             window.inner_size().width,
             window.inner_size().height,
         ),
