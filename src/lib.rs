@@ -88,15 +88,9 @@ pub extern "C" fn spawn_window(
         if let Event::WindowEvent { event, .. } = event {
             match event {
                 WindowEvent::CloseRequested => elwt.exit(),
-                WindowEvent::DroppedFile(path) => {
-                    window.set_window_icon(Some(load_icon(&path)));
-                }
-                WindowEvent::RedrawRequested => {
-                    draw_func();
-                }
-                WindowEvent::Resized(size) => {
-                    resize_func(size.width, size.height);
-                }
+                WindowEvent::DroppedFile(path) => window.set_window_icon(Some(load_icon(&path))),
+                WindowEvent::RedrawRequested => draw_func(),
+                WindowEvent::Resized(size) => resize_func(size.width, size.height),
                 _ => (),
             }
         }
