@@ -6,6 +6,8 @@ export const VERSION = "0.1.0";
 type winitDylibSymbols = {
   readonly spawn_window: {
     readonly parameters: readonly [
+      "buffer",
+      "buffer",
       "u32",
       "u32",
       "function",
@@ -21,6 +23,8 @@ type winitDylib = Deno.DynamicLibrary<winitDylibSymbols>;
 export class WinitWindow {
   private dylibPromise: Promise<winitDylib>;
   private system: "win32" | "cocoa" | "wayland" | "x11" | null = null;
+  private windowTitle: string = "Deno + winit";
+  private windowIconPath: string = Deno.realPathSync("assets/icon.png");
   private width: number = 512;
   private height: number = 512;
   private presentationFormat: GPUTextureFormat = "bgra8unorm";
@@ -35,6 +39,8 @@ export class WinitWindow {
 
   constructor({
     forceX11 = false,
+    windowTitle,
+    windowIconPath,
     width,
     height,
     presentationFormat,
@@ -43,6 +49,8 @@ export class WinitWindow {
     resizeFunction,
   }: {
     forceX11?: boolean;
+    windowTitle?: string;
+    windowIconPath?: string;
     width?: number;
     height?: number;
     presentationFormat?: GPUTextureFormat;
@@ -50,6 +58,14 @@ export class WinitWindow {
     drawFunction?: (device: GPUDevice, context: GPUCanvasContext) => void;
     resizeFunction?: (width: number, height: number) => void;
   }) {
+    if (windowTitle) {
+      this.windowTitle = windowTitle;
+    }
+
+    if (windowIconPath) {
+      this.windowIconPath = windowIconPath;
+    }
+
     if (width) {
       this.width = width;
     }
@@ -99,7 +115,15 @@ export class WinitWindow {
 
     const symbols = {
       spawn_window: {
-        parameters: ["u32", "u32", "function", "function", "function"],
+        parameters: [
+          "buffer",
+          "buffer",
+          "u32",
+          "u32",
+          "function",
+          "function",
+          "function",
+        ],
         result: "void",
       },
     } as const;
@@ -210,6 +234,8 @@ export class WinitWindow {
 
     const dylib = await this.dylibPromise;
     dylib.symbols.spawn_window(
+      asCString(this.windowTitle),
+      asCString(this.windowIconPath),
       this.width,
       this.height,
       setupFunctionFfiCallback.pointer,
@@ -239,4 +265,9 @@ function dlopen_Local(symbols: winitDylibSymbols): Promise<winitDylib> {
   const libPath = `./target/release/${libFileName}`;
 
   return Promise.resolve(Deno.dlopen(libPath, symbols));
+}
+
+function asCString(str: string): Uint8Array {
+  const enc = new TextEncoder();
+  return enc.encode(`${str}\0`);
 }

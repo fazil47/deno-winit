@@ -1,6 +1,9 @@
 #![allow(clippy::single_match)]
 
-use std::{ffi, path::Path};
+use std::{
+    ffi::{self, c_char, CStr},
+    path::Path,
+};
 
 use raw_window_handle::{HasRawDisplayHandle, HasRawWindowHandle};
 use winit::{
@@ -12,6 +15,8 @@ use winit::{
 
 #[no_mangle]
 pub extern "C" fn spawn_window(
+    window_title: *mut u8,
+    window_icon_path: *mut u8,
     width: u32,
     height: u32,
     setup_func: extern "C" fn(
@@ -23,22 +28,31 @@ pub extern "C" fn spawn_window(
     draw_func: extern "C" fn(),
     resize_func: extern "C" fn(width: u32, height: u32),
 ) {
-    // You'll have to choose an icon size at your own discretion. On X11, the desired size varies
-    // by WM, and on Windows, you still have to account for screen scaling. Here we use 32px,
-    // since it seems to work well enough in most cases. Be careful about going too high, or
-    // you'll be bitten by the low-quality downscaling built into the WM.
-    let path = concat!(env!("CARGO_MANIFEST_DIR"), "/src/icon.png");
-
-    let icon = load_icon(Path::new(path));
+    // Load window icon from path
+    let window_icon_path: String = unsafe {
+        String::from_utf8(
+            CStr::from_ptr(window_icon_path as *const c_char)
+                .to_bytes()
+                .to_vec(),
+        )
+        .expect("Failed to convert window icon path to string")
+    };
+    let window_icon_path: &Path = Path::new(window_icon_path.as_str());
+    let window_icon = load_icon(window_icon_path);
 
     let event_loop = EventLoop::new().unwrap();
 
     let window = WindowBuilder::new()
-        .with_title("An iconic window!")
+        .with_title(unsafe {
+            String::from_utf8(
+                CStr::from_ptr(window_title as *const c_char)
+                    .to_bytes()
+                    .to_vec(),
+            )
+            .expect("Failed to convert window title to string")
+        })
         .with_inner_size(Size::Physical(PhysicalSize::new(width, height)))
-        // At present, this only does anything on Windows and X11, so if you want to save load
-        // time, you can put icon loading behind a function that returns `None` on other platforms.
-        .with_window_icon(Some(icon))
+        .with_window_icon(Some(window_icon))
         .build(&event_loop)
         .unwrap();
 
@@ -88,7 +102,6 @@ pub extern "C" fn spawn_window(
         if let Event::WindowEvent { event, .. } = event {
             match event {
                 WindowEvent::CloseRequested => elwt.exit(),
-                WindowEvent::DroppedFile(path) => window.set_window_icon(Some(load_icon(&path))),
                 WindowEvent::RedrawRequested => draw_func(),
                 WindowEvent::Resized(size) => resize_func(size.width, size.height),
                 _ => (),

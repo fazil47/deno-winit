@@ -14,6 +14,7 @@ fn fs_main() -> @location(0) vec4<f32> {
 }
 `;
 
+const windowTitle = "Hello Triangle";
 const presentationFormat = "bgra8unorm";
 let renderPipeline: GPURenderPipeline | null = null;
 
@@ -73,6 +74,7 @@ const resizeFunction = (width: number, height: number) => {
 };
 
 const window = new WinitWindow({
+  windowTitle,
   presentationFormat,
   setupFunction,
   drawFunction,
