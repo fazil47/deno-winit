@@ -1,4 +1,5 @@
-import { dlopen, FetchOptions } from "@denosaurs/plug";
+import type { FetchOptions } from "@denosaurs/plug";
+import { dlopen } from "@denosaurs/plug";
 
 export const VERSION = "0.1.0";
 
