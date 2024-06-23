@@ -36,7 +36,7 @@ export class WinitWindow {
   private dylibPromise: Promise<winitDylib>;
   private system: "win32" | "cocoa" | "wayland" | "x11" | null = null;
   private windowTitle: string = "Deno + winit";
-  private windowIconPath: string = Deno.realPathSync("assets/icon.png");
+  private windowIconPath: string | null = null;
   private width: number = 512;
   private height: number = 512;
   private presentationFormat: GPUTextureFormat = "bgra8unorm";
@@ -53,7 +53,7 @@ export class WinitWindow {
    * The winit window constructor.
    * @param forceX11 Whether to force X11 on Linux.
    * @param windowTitle The window title.
-   * @param windowIconPath The window icon path.
+   * @param windowIconPath The window icon absolute path. Only supported on Windows and X11.
    * @param width The window width in pixels.
    * @param height The window height in pixels.
    * @param presentationFormat The presentation format.
@@ -262,7 +262,7 @@ export class WinitWindow {
     const dylib = await this.dylibPromise;
     dylib.symbols.spawn_window(
       asCString(this.windowTitle),
-      asCString(this.windowIconPath),
+      this.windowIconPath ? asCString(this.windowIconPath) : null,
       this.width,
       this.height,
       setupFunctionFfiCallback.pointer,
