@@ -2,6 +2,8 @@
 
 Winit bindings for Deno.
 
+![Demo of the hello_triangle example running on Windows](./assets/screenshot.png)
+
 ## How to run
 
 Run the `hello_triangle` example:
