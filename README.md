@@ -1,5 +1,7 @@
 # deno_winit
 
+Winit bindings for Deno.
+
 ## How to run
 
 Run the `hello_triangle` example:
