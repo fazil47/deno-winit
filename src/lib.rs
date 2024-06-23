@@ -28,18 +28,6 @@ pub extern "C" fn spawn_window(
     draw_func: extern "C" fn(),
     resize_func: extern "C" fn(width: u32, height: u32),
 ) {
-    // Load window icon from path
-    let window_icon_path: String = unsafe {
-        String::from_utf8(
-            CStr::from_ptr(window_icon_path as *const c_char)
-                .to_bytes()
-                .to_vec(),
-        )
-        .expect("Failed to convert window icon path to string")
-    };
-    let window_icon_path: &Path = Path::new(window_icon_path.as_str());
-    let window_icon = load_icon(window_icon_path);
-
     let event_loop = EventLoop::new().unwrap();
 
     let window = WindowBuilder::new()
@@ -52,9 +40,24 @@ pub extern "C" fn spawn_window(
             .expect("Failed to convert window title to string")
         })
         .with_inner_size(Size::Physical(PhysicalSize::new(width, height)))
-        .with_window_icon(Some(window_icon))
         .build(&event_loop)
         .unwrap();
+
+    // Load window icon if provided
+    if !window_icon_path.is_null() {
+        let window_icon_path: String = unsafe {
+            String::from_utf8(
+                CStr::from_ptr(window_icon_path as *const c_char)
+                    .to_bytes()
+                    .to_vec(),
+            )
+            .expect("Failed to convert window icon path to string")
+        };
+        let window_icon_path: &Path = Path::new(window_icon_path.as_str());
+        let window_icon = load_icon(window_icon_path);
+
+        window.set_window_icon(Some(window_icon));
+    }
 
     match window.raw_window_handle() {
         raw_window_handle::RawWindowHandle::Win32(handle) => setup_func(

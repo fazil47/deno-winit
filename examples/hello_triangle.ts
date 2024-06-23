@@ -15,6 +15,7 @@ fn fs_main() -> @location(0) vec4<f32> {
 `;
 
 const windowTitle = "Hello Triangle";
+const windowIconPath = Deno.realPathSync("assets/icon.png");
 const presentationFormat = "bgra8unorm";
 let renderPipeline: GPURenderPipeline | null = null;
 
@@ -75,6 +76,7 @@ const resizeFunction = (width: number, height: number) => {
 
 const window = new WinitWindow({
   windowTitle,
+  windowIconPath,
   presentationFormat,
   setupFunction,
   drawFunction,
