@@ -1,4 +1,4 @@
-# deno_winit
+# deno-winit
 
 Winit bindings for Deno.
 
