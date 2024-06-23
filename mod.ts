@@ -1,8 +1,14 @@
 import type { FetchOptions } from "@denosaurs/plug";
 import { dlopen } from "@denosaurs/plug";
 
+/**
+ * The library version.
+ */
 export const VERSION = "0.1.0";
 
+/**
+ * The winit dynamic library symbols.
+ */
 type winitDylibSymbols = {
   readonly spawn_window: {
     readonly parameters: readonly [
@@ -18,8 +24,14 @@ type winitDylibSymbols = {
   };
 };
 
+/**
+ * The loaded winit dynamic library.
+ */
 type winitDylib = Deno.DynamicLibrary<winitDylibSymbols>;
 
+/**
+ * The winit window class.
+ */
 export class WinitWindow {
   private dylibPromise: Promise<winitDylib>;
   private system: "win32" | "cocoa" | "wayland" | "x11" | null = null;
@@ -37,6 +49,18 @@ export class WinitWindow {
     () => {};
   private resizeFunction: (width: number, height: number) => void = () => {};
 
+  /**
+   * The winit window constructor.
+   * @param forceX11 Whether to force X11 on Linux.
+   * @param windowTitle The window title.
+   * @param windowIconPath The window icon path.
+   * @param width The window width in pixels.
+   * @param height The window height in pixels.
+   * @param presentationFormat The presentation format.
+   * @param setupFunction The setup function.
+   * @param drawFunction The draw function.
+   * @param resizeFunction The resize function.
+   */
   constructor({
     forceX11 = false,
     windowTitle,
@@ -133,6 +157,9 @@ export class WinitWindow {
         : dlopen(options, symbols);
   }
 
+  /**
+   * Spawns the winit window.
+   */
   public async spawn(): Promise<void> {
     if (!this.dylibPromise) {
       throw new Error("Dynamic library not loaded.");
@@ -245,6 +272,11 @@ export class WinitWindow {
   }
 }
 
+/**
+ * Opens the local dynamic library.
+ * @param symbols The dynamic library symbols.
+ * @returns The dynamic library.
+ */
 function dlopen_Local(symbols: winitDylibSymbols): Promise<winitDylib> {
   let libFileName = "";
   switch (Deno.build.os) {
@@ -267,6 +299,11 @@ function dlopen_Local(symbols: winitDylibSymbols): Promise<winitDylib> {
   return Promise.resolve(Deno.dlopen(libPath, symbols));
 }
 
+/**
+ * Converts a string to a C string.
+ * @param str The string.
+ * @returns The C string.
+ */
 function asCString(str: string): Uint8Array {
   const enc = new TextEncoder();
   return enc.encode(`${str}\0`);
