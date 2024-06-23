@@ -1,6 +1,6 @@
 {
   "name": "@fazil47/deno-winit",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "tasks": {
     "hello_triangle": "deno run --allow-ffi --allow-env --allow-read --allow-net --allow-write --unstable-ffi --unstable-webgpu examples/hello_triangle.ts",
     "hello_triangle_local": "export DENO_WINIT_LOCAL_LIB=1 && deno run --allow-ffi --allow-env --allow-read --unstable-ffi --unstable-webgpu examples/hello_triangle.ts"
