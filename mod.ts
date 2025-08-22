@@ -18,7 +18,7 @@ type winitDylibSymbols = {
       "u32",
       "function",
       "function",
-      "function"
+      "function",
     ];
     readonly result: "void";
   };
@@ -43,7 +43,7 @@ export class WinitWindow {
 
   private setupFunction: (
     device: GPUDevice,
-    context: GPUCanvasContext
+    context: GPUCanvasContext,
   ) => void = () => {};
   private drawFunction: (device: GPUDevice, context: GPUCanvasContext) => void =
     () => {};
@@ -134,7 +134,8 @@ export class WinitWindow {
 
     const options: FetchOptions = {
       name: "deno_winit",
-      url: `https://github.com/fazil47/deno_winit/releases/download/v${VERSION}/`,
+      url:
+        `https://github.com/fazil47/deno_winit/releases/download/v${VERSION}/`,
     };
 
     const symbols = {
@@ -151,10 +152,9 @@ export class WinitWindow {
         result: "void",
       },
     } as const;
-    this.dylibPromise =
-      Deno.env.get("DENO_WINIT_LOCAL_LIB") === "1"
-        ? dlopen_Local(symbols)
-        : dlopen(options, symbols);
+    this.dylibPromise = Deno.env.get("DENO_WINIT_LOCAL_LIB") === "1"
+      ? dlopen_Local(symbols)
+      : dlopen(options, symbols);
   }
 
   /**
@@ -185,10 +185,10 @@ export class WinitWindow {
     let displayHandle: Deno.PointerValue<unknown> | null = null;
 
     const setupSurfaceAndContext = (
-      winHandle: Deno.PointerValue<unknown>,
-      dispHandle: Deno.PointerValue<unknown>,
+      windowHandle: Deno.PointerValue<unknown>,
+      displayHandle: Deno.PointerValue<unknown>,
       width: number,
-      height: number
+      height: number,
     ) => {
       if (!this.system) {
         console.error("System not supported.");
@@ -196,16 +196,18 @@ export class WinitWindow {
       }
 
       surface = new Deno.UnsafeWindowSurface(
-        this.system,
-        winHandle,
-        dispHandle
+        {
+          system: this.system,
+          windowHandle,
+          displayHandle,
+          width,
+          height,
+        },
       );
       context = surface.getContext("webgpu");
       context.configure({
         device,
         format: this.presentationFormat,
-        width,
-        height,
       });
     };
     const setupFunctionFfiCallback = new Deno.UnsafeCallback(
@@ -221,7 +223,7 @@ export class WinitWindow {
         }
 
         this.setupFunction(device, context);
-      }
+      },
     );
 
     const drawFunctionCallback = () => {
@@ -240,7 +242,7 @@ export class WinitWindow {
     };
     const drawFunctionFfiCallback = new Deno.UnsafeCallback(
       { parameters: [], result: "void" },
-      drawFunctionCallback
+      drawFunctionCallback,
     );
 
     const resizeFunctionFfiCallback = new Deno.UnsafeCallback(
@@ -256,7 +258,7 @@ export class WinitWindow {
           setupSurfaceAndContext(windowHandle, displayHandle, width, height);
           drawFunctionCallback();
         }
-      }
+      },
     );
 
     const dylib = await this.dylibPromise;
@@ -267,7 +269,7 @@ export class WinitWindow {
       this.height,
       setupFunctionFfiCallback.pointer,
       drawFunctionFfiCallback.pointer,
-      resizeFunctionFfiCallback.pointer
+      resizeFunctionFfiCallback.pointer,
     );
   }
 }
