@@ -4,7 +4,7 @@ import { dlopen } from "@denosaurs/plug";
 /**
  * The library version.
  */
-export const VERSION = "0.2.1";
+export const VERSION = "0.2.2";
 
 /**
  * The winit dynamic library symbols.
