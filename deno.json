@@ -8,5 +8,6 @@
   "imports": {
     "@denosaurs/plug": "jsr:@denosaurs/plug@^1.0.6"
   },
-  "exports": "./mod.ts"
+  "exports": "./mod.ts",
+  "license": "MIT, Apache-2.0"
 }
